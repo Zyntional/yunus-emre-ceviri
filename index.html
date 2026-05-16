@@ -87,6 +87,29 @@
             word-wrap: break-word;
         }
 
+        /* --- İLETİŞİM FORMU ELEMANLARI --- */
+        .input-field {
+            width: 100%; 
+            padding: 8px; 
+            border: 1px solid #cbd5e1; 
+            border-radius: 6px; 
+            box-sizing: border-box; 
+            font-size: 14px;
+        }
+
+        .form-btn {
+            background: #64748b; 
+            color: white; 
+            border: none; 
+            padding: 8px; 
+            border-radius: 6px; 
+            font-weight: bold; 
+            cursor: pointer; 
+            font-size: 14px; 
+            transition: 0.3s;
+        }
+        .form-btn:hover { background: #475569; }
+
         footer {
             margin-top: 20px;
             font-size: 12px;
@@ -115,13 +138,18 @@
 
     <div class="result" id="resultText">Sonuç burada görünecek...</div>
 
-    <div style="margin-top: 25px; border-top: 1px solid #f1f5f9; padding-top: 20px; text-align: center;">
-        <h3 style="color: #1e293b; font-size: 16px; margin-bottom: 10px;">📬 Geri Bildirim / İletişim</h3>
-        <p style="color: #64748b; font-size: 13px; margin-bottom: 15px; line-height: 1.4;">Herhangi bir hata bildirmek veya bizimle iletişime geçmek için aşağıdaki butona tıklayarak mail atabilirsiniz.</p>
+    <div style="margin-top: 25px; border-top: 1px solid #f1f5f9; padding-top: 20px; text-align: left;">
+        <h3 style="color: #1e293b; font-size: 16px; margin-bottom: 10px; text-align: center;">📬 Geri Bildirim / İletişim</h3>
         
-        <a href="mailto:zyntional.dev@gmail.com?subject=Yunus Emre Ceviri - Geri Bildirim" class="btn" style="text-decoration: none; display: inline-block; width: auto; padding: 10px 20px; background: #64748b; font-size: 14px;">
-            📧 Mail Gönder
-        </a>
+        <form id="contactForm" style="display: flex; flex-direction: column; gap: 10px;">
+            <input type="text" id="formName" placeholder="Adınız (İsteğe bağlı)" class="input-field">
+            <input type="email" id="formEmail" placeholder="E-posta adresiniz" required class="input-field">
+            <textarea id="formMessage" placeholder="Mesajınız veya hata bildirimi..." required class="input-field" style="height: 60px; resize: none;"></textarea>
+            
+            <button type="submit" class="form-btn" id="formSubmitBtn">Mesaj Gönder</button>
+        </form>
+        
+        <div id="formStatus" style="margin-top: 10px; font-size: 13px; text-align: center; font-weight: bold; display: none;"></div>
     </div>
 
     <footer>
@@ -130,6 +158,7 @@
 </div>
 
 <script>
+    // --- ÇEVİRİ FONKSİYONU ---
     async function translateNow() {
         const text = document.getElementById('textInput').value.trim();
         const lang = document.getElementById('langPair').value.split('|');
@@ -161,6 +190,56 @@
             console.error(error);
         }
     }
+
+    // --- SİTEDEN ÇIKMADAN ARKA PLANDA MAİL GÖNDERME FONKSİYONU ---
+    document.getElementById('contactForm').addEventListener('submit', async function(e) {
+        e.preventDefault(); // Sayfanın yenilenmesini ve dışarı taşınmasını engeller
+        
+        const btn = document.getElementById('formSubmitBtn');
+        const status = document.getElementById('formStatus');
+        
+        const name = document.getElementById('formName').value;
+        const email = document.getElementById('formEmail').value;
+        const message = document.getElementById('formMessage').value;
+
+        btn.disabled = true;
+        btn.innerText = "Gönderiliyor...";
+        status.style.display = "block";
+        status.style.color = "#64748b";
+        status.innerText = "Mesaj iletiliyor, lütfen bekleyin...";
+
+        try {
+            // FormSubmit'in AJAX apisini tetikliyoruz (Sayfa değişmez!)
+            const response = await fetch("https://formsubmit.co/ajax/zyntional.dev@gmail.com", {
+                method: "POST",
+                headers: { 
+                    "Content-Type": "application/json",
+                    "Accept": "application/json"
+                },
+                body: JSON.stringify({
+                    İsim: name,
+                    Email: email,
+                    Mesaj: message,
+                    _captcha: "false"
+                })
+            });
+
+            if(response.ok) {
+                status.style.color = "#16a34a"; // Yeşil renk
+                status.innerText = "🚀 Mesajınız başarıyla gönderildi!";
+                document.getElementById('contactForm').reset(); // Kutuları temizler
+            } else {
+                status.style.color = "#dc2626"; // Kırmızı renk
+                status.innerText = "Sunucu yoğun, lütfen az sonra tekrar deneyin.";
+            }
+        } catch (error) {
+            status.style.color = "#dc2626";
+            status.innerText = "Bağlantı hatası oluştu.";
+        } finally {
+            btn.disabled = false;
+            btn.innerText = "Mesaj Gönder";
+        }
+    });
 </script>
 
 </body>
